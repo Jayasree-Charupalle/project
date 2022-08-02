@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="f6ed55a6-b33e-44d3-8d6c-f724bd7a947d" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="177a9f98-897b-4bbd-a174-0e5274086a38" >
+		<db:my-sql-connection host="localhost" port="3306" user="root" password="root123" database="student" />
+	</db:config>
+	<flow name="databaseFlow" doc:id="be9e0b12-484c-43f8-84c7-6d9956c9a7f7" >
+		<http:listener doc:name="Listener" doc:id="23d93f19-ef46-4bae-9bd2-2ccd9d830c2e" config-ref="HTTP_Listener_config" path="/database"/>
+		<db:select doc:name="Select" doc:id="f4451fd1-b258-49e1-9b7e-483d62f21bc7" config-ref="Database_Config">
+			<db:sql ><![CDATA[select *from studentdetails]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{'s.no':1,'name':"jay",'college':"acem"}]]]></db:input-parameters>
+		</db:select>
+		<ee:transform doc:name="Transform Message" doc:id="0510f030-faad-49af-ad08-6c0ed7f0488d" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="896b7a49-d42a-473d-8d7e-af65fd1133d6" message="#[payload]"/>
+	</flow>
+	<error-handler name="databaseError_Handler" doc:id="aeb94dd4-d385-4a4f-b8db-e50b5b025f13" >
+		<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="7bcf92d9-9a4a-46a3-8045-09df2ab3aa5d" type="ANY">
+			<ee:transform doc:name="Transform Message" doc:id="75d31ce3-6cb0-4867-856f-bdf496532a19" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"message":"error"
+}]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+		</on-error-continue>
+	</error-handler>
+</mule>
